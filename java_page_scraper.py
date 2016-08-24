@@ -50,4 +50,5 @@ def load_javascript_page(url, prefix='javascript:'):
         new_url_list.extend(extract_urls(new_page_soup))
         driver.back()
     driver.close()
+    driver.quit()
     return new_url_list
