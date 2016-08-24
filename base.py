@@ -5,6 +5,7 @@ Do not follow external links
 
 from start_url_list import start_url_list
 from urllib.parse import urlparse
+import java_page_scraper
 import parse_page
 import url_queue
 import csv
@@ -49,20 +50,24 @@ def scrape_cpa_tree(queue):
     firm_list = []
     set_of_external_urls = set([])
     list_of_external_url_queues = []
-    while queue.queue.len() > 0:
+    while queue.queue_len() > 0:
         curr_url = queue.dequeue()
         page_tree = parse_page.fetch_page(curr_url)
         if page_tree is not None:
-            url_list = parse_page.extract_urls(page_tree)
             java_crawled = False
+            url_list = parse_page.extract_urls(page_tree)
             for url in url_list:
                 # This is a link to firm details
                 if url[:36] == "javascript:open_window('details.aspx":
                     queue.enqueue(JAVA_PREFIX + url[24:len(url)-2])
                 # Deal with paginated lists
-                elif url[:10] == 'javascript' and not java_crawled:
+                elif url[:23] == 'javascript:__doPostBack' and not java_crawled:
                     # TODO: Deal with this situation
                     java_crawled = True
+                    java_urls = java_page_scraper.load_javascript_page(
+                        url, 'javascript:__doPostBack')
+                    for new_url in java_urls:
+                        queue.enqueue(new_url)
                 # Enqueue links to same site
                 elif url[:len(SITE_PREFIX)] == SITE_PREFIX:
                     queue.enqueue(url)
@@ -87,40 +92,7 @@ def scrape_cpa_tree(queue):
 # 5b. scrape tree
 external_sites, firm_details = scrape_cpa_tree(cpa_queue)
 
-# num_scraped = 0
-# while cpa_queue.queue_len() > 0:
-#     num_scraped += 1
-#     # Extract URLs and add to queue
-#     curr_url = cpa_queue.dequeue()
-#     page_tree = parse_page.fetch_page(curr_url)
-#     if page_tree is not None:
-#         url_list = parse_page.extract_urls(page_tree)
-#         for url in url_list:
-#             if url[:36] == "javascript:open_window('details.aspx":
-#                 cpa_queue.enqueue(JAVA_PREFIX + url[24:len(url)-2])
-#             elif url[:10] == 'javascript':
-#                 # TODO: Deal with this situation
-#                 pass
-#             elif url[:len(SITE_PREFIX)] == SITE_PREFIX:
-#                 cpa_queue.enqueue(url)
-#             else:
-#                 parsed_url = urlparse(url)
-#                 external_url = \
-#                     '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_url)
-#                 external_url_queue = url_queue.URLSearchQueue()
-#                 if external_url not in set_of_external_urls:
-#                     external_url_queue.enqueue(external_url)
-#                 if url != external_url and url not in set_of_external_urls:
-#                     external_url_queue.enqueue(url)
-#                 if external_url_queue.queue_len() > 0:
-#                     set_of_external_url_queues.add(external_url_queue)
-#
-#         # If this is a details page, extract firm info and add to firm_list
-#         if 'details.aspx?searchnumber=' in curr_url:
-#             firm_list.append(extract_firm_info(page_tree))
 
-
-# 6. Define routine to extract email address from text
 def extract_emails(soup_item):
     """
     Extracts emails from both web page text and hrefs
