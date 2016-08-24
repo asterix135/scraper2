@@ -2,3 +2,5 @@ vcs.xml
 .idea
 .idea/workspace.xml
 __pycache__/
+ghostdriver.log
+test_html.html

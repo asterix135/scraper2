@@ -7,7 +7,6 @@ from start_url_list import start_url_list
 from urllib.parse import urlparse
 import parse_page
 import url_queue
-import json
 import csv
 import re
 
@@ -45,7 +44,7 @@ def extract_firm_info(soup_item):
     return {'firm_details': firm_details, 'firm_url': firm_url}
 
 
-# 5. function to scrape base tree
+# 5a. function to scrape base tree
 def scrape_cpa_tree(queue):
     firm_list = []
     set_of_external_urls = set([])
@@ -55,14 +54,15 @@ def scrape_cpa_tree(queue):
         page_tree = parse_page.fetch_page(curr_url)
         if page_tree is not None:
             url_list = parse_page.extract_urls(page_tree)
+            java_crawled = False
             for url in url_list:
                 # This is a link to firm details
                 if url[:36] == "javascript:open_window('details.aspx":
                     queue.enqueue(JAVA_PREFIX + url[24:len(url)-2])
                 # Deal with paginated lists
-                elif url[:10] == 'javascript':
+                elif url[:10] == 'javascript' and not java_crawled:
                     # TODO: Deal with this situation
-                    pass
+                    java_crawled = True
                 # Enqueue links to same site
                 elif url[:len(SITE_PREFIX)] == SITE_PREFIX:
                     queue.enqueue(url)
@@ -84,7 +84,7 @@ def scrape_cpa_tree(queue):
                 firm_list.append(extract_firm_info(page_tree))
     return list_of_external_url_queues, firm_list
 
-# 5a. scrape tree
+# 5b. scrape tree
 external_sites, firm_details = scrape_cpa_tree(cpa_queue)
 
 # num_scraped = 0
