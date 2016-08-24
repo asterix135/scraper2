@@ -15,9 +15,8 @@ import re
 cpa_queue = url_queue.URLSearchQueue()
 
 # 1a. Initialize firm_list (consider making this a MySQL d/b)
-firm_list = []
-set_of_external_urls = set([])
-set_of_external_url_queues = set([])
+# firm_list = []
+# set_of_external_url_queues = set([])
 set_of_emails = set([])
 
 # 2. Various static values
@@ -46,38 +45,79 @@ def extract_firm_info(soup_item):
     return {'firm_details': firm_details, 'firm_url': firm_url}
 
 
-# 5. scrape tree
-num_scraped = 0
-while cpa_queue.queue_len() > 0:
-    num_scraped += 1
-    # Extract URLs and add to queue
-    curr_url = cpa_queue.dequeue()
-    page_tree = parse_page.fetch_page(curr_url)
-    if page_tree is not None:
-        url_list = parse_page.extract_urls(page_tree)
-        for url in url_list:
-            if url[:36] == "javascript:open_window('details.aspx":
-                cpa_queue.enqueue(JAVA_PREFIX + url[24:len(url)-2])
-            elif url[:10] == 'javascript':
-                # TODO: Deal with this situation
-                pass
-            elif url[:len(SITE_PREFIX)] == SITE_PREFIX:
-                cpa_queue.enqueue(url)
-            else:
-                parsed_url = urlparse(url)
-                external_url = \
-                    '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_url)
-                external_url_queue = url_queue.URLSearchQueue()
-                if external_url not in set_of_external_urls:
-                    external_url_queue.enqueue(external_url)
-                if url != external_url and url not in set_of_external_urls:
-                    external_url_queue.enqueue(url)
-                if external_url_queue.queue_len() > 0:
-                    set_of_external_url_queues.add(external_url_queue)
+# 5. function to scrape base tree
+def scrape_cpa_tree(queue):
+    firm_list = []
+    set_of_external_urls = set([])
+    list_of_external_url_queues = []
+    while queue.queue.len() > 0:
+        curr_url = queue.dequeue()
+        page_tree = parse_page.fetch_page(curr_url)
+        if page_tree is not None:
+            url_list = parse_page.extract_urls(page_tree)
+            for url in url_list:
+                # This is a link to firm details
+                if url[:36] == "javascript:open_window('details.aspx":
+                    queue.enqueue(JAVA_PREFIX + url[24:len(url)-2])
+                # Deal with paginated lists
+                elif url[:10] == 'javascript':
+                    # TODO: Deal with this situation
+                    pass
+                # Enqueue links to same site
+                elif url[:len(SITE_PREFIX)] == SITE_PREFIX:
+                    queue.enqueue(url)
+                # Put external links into a separate queue
+                if 'details.aspx?searchnumber=' in curr_url:
+                    parsed_url = urlparse(url)
+                    external_base_url = \
+                        '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_url)
+                    external_url_queue =url_queue.URLSearchQueue()
+                    if external_base_url not in set_of_external_urls:
+                        external_url_queue.enqueue(external_base_url)
+                    if url != external_base_url and \
+                                    url not in set_of_external_urls:
+                        external_url_queue.enqueue(url)
+                    if external_url_queue.queue_len() > 0:
+                        list_of_external_url_queues.append(external_url_queue)
+            # if curr_url is detail page, extract firm info and add to firm_list
+            if 'details.aspx?searchnumber=' in curr_url:
+                firm_list.append(extract_firm_info(page_tree))
+    return list_of_external_url_queues, firm_list
 
-        # If this is a details page, extract firm info and add to firm_list
-        if 'details.aspx?searchnumber=' in curr_url:
-            firm_list.append(extract_firm_info(page_tree))
+# 5a. scrape tree
+external_sites, firm_details = scrape_cpa_tree(cpa_queue)
+
+# num_scraped = 0
+# while cpa_queue.queue_len() > 0:
+#     num_scraped += 1
+#     # Extract URLs and add to queue
+#     curr_url = cpa_queue.dequeue()
+#     page_tree = parse_page.fetch_page(curr_url)
+#     if page_tree is not None:
+#         url_list = parse_page.extract_urls(page_tree)
+#         for url in url_list:
+#             if url[:36] == "javascript:open_window('details.aspx":
+#                 cpa_queue.enqueue(JAVA_PREFIX + url[24:len(url)-2])
+#             elif url[:10] == 'javascript':
+#                 # TODO: Deal with this situation
+#                 pass
+#             elif url[:len(SITE_PREFIX)] == SITE_PREFIX:
+#                 cpa_queue.enqueue(url)
+#             else:
+#                 parsed_url = urlparse(url)
+#                 external_url = \
+#                     '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_url)
+#                 external_url_queue = url_queue.URLSearchQueue()
+#                 if external_url not in set_of_external_urls:
+#                     external_url_queue.enqueue(external_url)
+#                 if url != external_url and url not in set_of_external_urls:
+#                     external_url_queue.enqueue(url)
+#                 if external_url_queue.queue_len() > 0:
+#                     set_of_external_url_queues.add(external_url_queue)
+#
+#         # If this is a details page, extract firm info and add to firm_list
+#         if 'details.aspx?searchnumber=' in curr_url:
+#             firm_list.append(extract_firm_info(page_tree))
 
 
 # 6. Define routine to extract email address from text
@@ -116,27 +156,16 @@ def process_external_url_queue(queue_of_urls):
 
 
 # 8. Go through each external URL and scrape emails
-while len(set_of_external_url_queues) > 0:
-    active_queue = firm_list.pop()
+while len(external_sites) > 0:
+    active_queue = external_sites.pop()
     set_of_emails.update(process_external_url_queue(active_queue))
 
-
-
-
-print('Completed\n')
-print('%s Records scraped' % len(firm_list))
-print('%s Pages visited' % num_scraped)
-
-
-
-with open('firm_list', 'w') as fout:
-    json.dump(firm_list, fout)
 
 with open('firm_list.csv', 'w') as csvfile:
     fieldnames = ['firm_details', 'firm_url']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
-    for firm in firm_list:
+    for firm in firm_details:
         writer.writerow(firm)
 
 with open('email_list.csv', 'w') as csvfile:
