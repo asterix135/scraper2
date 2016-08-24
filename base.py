@@ -15,20 +15,16 @@ import re
 cpa_queue = url_queue.URLSearchQueue()
 
 # 1a. Initialize firm_list (consider making this a MySQL d/b)
-# firm_list = []
-# set_of_external_url_queues = set([])
 set_of_emails = set([])
 
 # 2. Various static values
-# START_URL = 'http://www.cpaontario.ca/public/apps/cafirm/sortfims.aspx?FirmRegionNumber=5&locality=A'
-# START_URL = 'http://www.cpaontario.ca/public/apps/cafirm/centralont.aspx'
 JAVA_PREFIX = 'http://www.cpaontario.ca/public/apps/cafirm/'
 SITE_PREFIX = 'http://www.cpaontario.ca'
 
 # 3. Add START_URL(s) to queue
 # cpa_queue.enqueue(START_URL)
-for url in start_url_list:
-    cpa_queue.enqueue(url)
+for start_url in start_url_list:
+    cpa_queue.enqueue(start_url)
 
 
 # 4. Define routine to extract relevant information from firm pages
@@ -62,10 +58,9 @@ def scrape_cpa_tree(queue):
                     queue.enqueue(JAVA_PREFIX + url[24:len(url)-2])
                 # Deal with paginated lists
                 elif url[:23] == 'javascript:__doPostBack' and not java_crawled:
-                    # TODO: Deal with this situation
                     java_crawled = True
                     java_urls = java_page_scraper.load_javascript_page(
-                        url, 'javascript:__doPostBack')
+                        curr_url, 'javascript:__doPostBack')
                     for new_url in java_urls:
                         queue.enqueue(new_url)
                 # Enqueue links to same site
@@ -76,12 +71,14 @@ def scrape_cpa_tree(queue):
                     parsed_url = urlparse(url)
                     external_base_url = \
                         '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_url)
-                    external_url_queue =url_queue.URLSearchQueue()
+                    external_url_queue = url_queue.URLSearchQueue()
                     if external_base_url not in set_of_external_urls:
                         external_url_queue.enqueue(external_base_url)
+                        set_of_external_urls.add(external_base_url)
                     if url != external_base_url and \
-                                    url not in set_of_external_urls:
+                            url not in set_of_external_urls:
                         external_url_queue.enqueue(url)
+                        set_of_external_urls.add(url)
                     if external_url_queue.queue_len() > 0:
                         list_of_external_url_queues.append(external_url_queue)
             # if curr_url is detail page, extract firm info and add to firm_list
@@ -90,7 +87,7 @@ def scrape_cpa_tree(queue):
     return list_of_external_url_queues, firm_list
 
 # 5b. scrape tree
-external_sites, firm_details = scrape_cpa_tree(cpa_queue)
+external_sites, list_of_firms = scrape_cpa_tree(cpa_queue)
 
 
 def extract_emails(soup_item):
@@ -137,7 +134,7 @@ with open('firm_list.csv', 'w') as csvfile:
     fieldnames = ['firm_details', 'firm_url']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
-    for firm in firm_details:
+    for firm in list_of_firms:
         writer.writerow(firm)
 
 with open('email_list.csv', 'w') as csvfile:

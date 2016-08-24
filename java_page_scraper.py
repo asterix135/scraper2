@@ -1,14 +1,12 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import parse_page
-from base import JAVA_PREFIX
+JAVA_PREFIX = 'http://www.cpaontario.ca/public/apps/cafirm/'
 
 
 def find_link_text_for_java_page(selenium_page, test_start=''):
     """
     Returns a list of link text values that match javascript link value
-    :param soup_item:
-    :return:
     """
     soup_page = BeautifulSoup(selenium_page.page_source, 'lxml')
     link_list = []
@@ -51,4 +49,5 @@ def load_javascript_page(url, prefix='javascript:'):
         new_page_soup = BeautifulSoup(driver.page_source, 'lxml')
         new_url_list.extend(extract_urls(new_page_soup))
         driver.back()
+    driver.close()
     return new_url_list
