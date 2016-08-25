@@ -3,21 +3,34 @@ Functions to parse web page
 """
 import requests  # for importing web pages
 import bs4  # beautifulsoup4 - for parsing
+from urllib.parse import urlparse
 # from collections import deque
 # import lxml  # to support bs4 - not sure if needed
 # from lxml import html  # option 2 for parsing
+
+
+def get_base_url(url):
+    parsed_url = urlparse(url)
+    base_url = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_url)
+    return base_url
 
 
 def fetch_page(url):
     """
     load web page and return as Beautiful Soup object
     """
-    page = requests.get(url)
+    if url[-3:].lower() == 'pdf':
+        print('skipping pdf: %s' % (url))
+    try:
+        page = requests.get(url)
+    except Exception as exc:
+        print('%s error on page %s' % (exc, url))
+        return
     try:
         page.raise_for_status()
     # TODO: There's a non-deprecated way to do this
     except Exception as exc:
-        print('There was a problem: %s' % (exc))
+        print('There was a problem on page %s: %s' % (url, exc))
         return
     # tree1 = html.fromstring(page.text)
     tree = bs4.BeautifulSoup(page.text, 'lxml')
@@ -33,8 +46,14 @@ def extract_urls(soup_item, test_start = ''):
     link_list = []
     for link in soup_item.find_all('a'):
         test_link = link.get('href')
-        if test_link is not None and test_link[:len(test_start)] == test_start:
-            link_list.append(test_link)
+        if test_link is not None:
+            if get_base_url(test_link) == '://' and len(test_link) > 0:
+                if test_link[0] == '/':
+                    link_list.append(test_start + test_link)
+                else:
+                    link_list.append(test_start + '/' + test_link)
+            elif test_link[:len(test_start)] == test_start:
+                link_list.append(test_link)
     return link_list
 
 
@@ -44,7 +63,7 @@ def extract_emails(soup_item):
     """
     email_list = []
     for link in soup_item.find_all('a'):
-        if 'mailto' in link.get('href'):
+        if link.get('href') and 'mailto' in link.get('href'):
             email = link.get('href').replace('mailto:', '')
             email_list.append(email)
     return email_list

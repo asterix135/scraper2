@@ -99,6 +99,6 @@ class URLSearchQueue:
         if len(self._search_queue) > 0:
             first_url = self._search_queue[0]
             parsed_url = urlparse(first_url)
-            return '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_url)
+            return '{uri.scheme}://{uri.netloc}'.format(uri=parsed_url)
         else:
             return

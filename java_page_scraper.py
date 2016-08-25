@@ -31,7 +31,7 @@ def extract_urls(soup_item):
     return link_list
 
 
-def load_javascript_page(url, prefix='javascript:'):
+def load_javascript_page(url, prefix='javascript:', driver=None):
     """
     Finds all javascript links matching prefix.  Loads each one, parses page
     and returns list of found urls
@@ -40,7 +40,8 @@ def load_javascript_page(url, prefix='javascript:'):
     :return:
     """
     new_url_list = []
-    driver = webdriver.PhantomJS()
+    if not driver:
+        driver = webdriver.PhantomJS()
     driver.get(url)
     link_text_list = find_link_text_for_java_page(driver, prefix)
     for link_text in link_text_list:
@@ -49,6 +50,4 @@ def load_javascript_page(url, prefix='javascript:'):
         new_page_soup = BeautifulSoup(driver.page_source, 'lxml')
         new_url_list.extend(extract_urls(new_page_soup))
         driver.back()
-    driver.close()
-    driver.quit()
     return new_url_list
