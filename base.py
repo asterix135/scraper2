@@ -10,12 +10,18 @@ import parse_page
 import url_queue
 import csv
 import re
+import pymysql
 from selenium import webdriver
 
 
 # 2. Various static values
 JAVA_PREFIX = 'http://www.cpaontario.ca/public/apps/cafirm/'
 SITE_PREFIX = 'http://www.cpaontario.ca'
+HOST = 'localhost'
+PASSWORD = 'python'
+USER = 'python'
+DB = 'cpa'
+PORT = 3306
 
 
 def base():
@@ -71,8 +77,12 @@ def scrape_cpa_tree(queue, driver=None):
     firm_list = []
     set_of_external_urls = set([])
     list_of_external_url_queues = []
+    n = 0
     while queue.queue_len() > 0:
         curr_url = queue.dequeue()
+        n += 1
+        if n % 100 == 0:
+            print('%s base site pages scraped' % n)
         page_tree = parse_page.fetch_page(curr_url)
         if page_tree is not None:
             java_crawled = False
@@ -126,24 +136,46 @@ def extract_emails(soup_item):
 
 
 # 7. Define routine to extract emails from external websites
-def process_external_url_queue(queue_of_urls):
+def process_external_url_queue(queue_of_urls, driver=None):
     """
     Crawls all in-domain pages and extracts email addresses
     :param queue_of_urls:
     :return:
     """
+    driver_created = False
+    if not driver:
+        driver = webdriver.PhantomJS()
+        driver_created = True
     base_url = queue_of_urls.get_base_url()
+    connection = pymysql.connect(host=HOST,
+                                 password=PASSWORD,
+                                 port=PORT,
+                                 user=USER,
+                                 db=DB)
+    print('crawling %s' % base_url)
     domain_emails = set([])
+    n = 0
     while queue_of_urls.queue_len() > 0:
         curr_url = queue_of_urls.dequeue()
-        print(curr_url)
-        page_tree = parse_page.fetch_page(curr_url)
+        n += 1
+        if n % 50 == 0:
+            print('%s pages crawled for %s' % (n, base_url))
+        # page_tree = parse_page.fetch_page(curr_url)
+        page_tree = java_page_scraper.fetch_page(curr_url, driver)
         if page_tree is not None:
             url_list = parse_page.extract_urls(page_tree, base_url)
             for url in url_list:
                 queue_of_urls.enqueue(url)
             emails_on_page = extract_emails(page_tree)
             domain_emails.update(emails_on_page)
+    if driver_created:
+        driver.close()
+        driver.quit()
+    sql = 'INSERT INTO emails VALUES (%s)'
+    with connection.cursor() as cursor:
+        for email in domain_emails:
+            cursor.execute(sql, email)
+    connection.commit()
     return domain_emails
 
 

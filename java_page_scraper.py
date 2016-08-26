@@ -51,3 +51,29 @@ def load_javascript_page(url, prefix='javascript:', driver=None):
         new_url_list.extend(extract_urls(new_page_soup))
         driver.back()
     return new_url_list
+
+def fetch_page(url, driver=None):
+    """
+    load web page and return as Beautiful Soup object
+    """
+    fn_driver_created = False
+    if not driver:
+        driver = webdriver.PhantomJS()
+        fn_driver_created = True
+    if url[-3:].lower() == 'pdf':
+        print('skipping pdf: %s' % (url))
+        return
+    old_page_source = driver.page_source
+    try:
+        driver.get(url)
+    except Exception as exc:
+        print('%s error on page %s' % (exc, url))
+        return
+    if driver.page_source != old_page_source:
+        tree = BeautifulSoup(driver.page_source, 'lxml')
+    else:
+        tree = None
+    if fn_driver_created:
+        driver.close()
+        driver.quit()
+    return tree
