@@ -21,6 +21,7 @@ def fetch_page(url):
     """
     if url[-3:].lower() == 'pdf':
         print('skipping pdf: %s' % (url))
+        return
     try:
         page = requests.get(url)
     except Exception as exc:

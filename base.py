@@ -38,17 +38,17 @@ def base():
     # 5b. scrape tree
     external_sites, list_of_firms = scrape_cpa_tree(cpa_queue, driver)
 
-    # 8. Go through each external URL and scrape emails
-    while len(external_sites) > 0:
-        active_queue = external_sites.pop()
-        set_of_emails.update(process_external_url_queue(active_queue))
-
     with open('firm_list.csv', 'w') as csvfile:
         fieldnames = ['firm_details', 'firm_url']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for firm in list_of_firms:
             writer.writerow(firm)
+
+    # 8. Go through each external URL and scrape emails
+    while len(external_sites) > 0:
+        active_queue = external_sites.pop()
+        set_of_emails.update(process_external_url_queue(active_queue, driver))
 
     with open('email_list.csv', 'w') as csvfile:
         fieldnames = ['email']
