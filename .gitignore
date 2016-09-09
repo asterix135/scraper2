@@ -4,3 +4,4 @@ vcs.xml
 __pycache__/
 ghostdriver.log
 *.html
+*.csv
