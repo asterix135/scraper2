@@ -63,7 +63,11 @@ def fetch_page(url, driver=None):
     if url[-3:].lower() == 'pdf':
         print('skipping pdf: %s' % (url))
         return
-    old_page_source = driver.page_source
+    try:
+        old_page_source = driver.page_source
+    except Exception as exc:
+        print('%s error on page %s' % (exc, url))
+        return
     try:
         driver.get(url)
     except Exception as exc:

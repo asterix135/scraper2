@@ -55,8 +55,10 @@ def base():
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for email in set_of_emails:
-            writer.writerow(email)
-
+            try:
+                writer.writerow(email)
+            except Exception as exc:
+                print('failed to write email %s' % email)
 
 # 4. Define routine to extract relevant information from firm pages
 def extract_firm_info(soup_item):
@@ -174,7 +176,10 @@ def process_external_url_queue(queue_of_urls, driver=None):
     sql = 'INSERT INTO emails VALUES (%s)'
     with connection.cursor() as cursor:
         for email in domain_emails:
-            cursor.execute(sql, email)
+            try:
+                cursor.execute(sql, email)
+            except:
+                print('failed to write %s' % email)
     connection.commit()
     return domain_emails
 
