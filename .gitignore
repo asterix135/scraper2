@@ -6,3 +6,4 @@ ghostdriver.log
 *.html
 *.csv
 *.txt
+/one_offs/*.txt
