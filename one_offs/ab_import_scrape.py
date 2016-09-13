@@ -2,7 +2,6 @@ import pymysql
 import re
 from url_queue import URLSearchQueue
 from base import process_external_url_queue
-from bs4 import BeautifulSoup
 from selenium import webdriver
 
 HOST = 'localhost'
