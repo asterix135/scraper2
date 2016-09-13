@@ -55,24 +55,24 @@ def main():
         list_of_firms.append({'firm_name': firm_name,
                               'firm_details': firm_details})
 
-    with open('canada_firm_list.csv', 'w') as csvfile:
-        fieldnames = ['firm_name', 'firm_details']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for firm in list_of_firms:
-            writer.writerow(firm)
+    # with open('canada_firm_list.csv', 'w') as csvfile:
+    #     fieldnames = ['firm_name', 'firm_details']
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #     writer.writeheader()
+    #     for firm in list_of_firms:
+    #         writer.writerow(firm)
 
     # 4. crawl each firm site for emails
     while len(list_of_external_queues) > 0:
         active_queue = list_of_external_queues.pop()
         email_set.update(process_external_url_queue(active_queue, driver))
 
-    with open('canada_email_list.csv', 'w') as csvfile:
-        fieldnames = ['email']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for email in email_set:
-            writer.writerow(email)
+    # with open('canada_email_list.csv', 'w') as csvfile:
+    #     fieldnames = ['email']
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #     writer.writeheader()
+    #     for email in email_set:
+    #         writer.writerow(email)
 
 
 def update_external_queue(list_of_queues, set_of_urls, new_url):

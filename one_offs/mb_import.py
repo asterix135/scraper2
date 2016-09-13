@@ -6,10 +6,10 @@ USER = 'python'
 DB = 'cpa'
 PORT = 3306
 
-with open('mb_cpa.txt', 'r') as f:
-    email_bulk = f.readlines()
+with open('ab_cpa.txt', 'r') as f:
+    text_bulk = f.readlines()
 
-email_set = email_bulk[0].strip().split()
+word_bag = text_bulk[0].strip().split()
 
 print(type(email_set))
 print(len(email_set))

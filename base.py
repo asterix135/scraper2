@@ -12,6 +12,7 @@ import csv
 import re
 import pymysql
 from selenium import webdriver
+import time
 
 
 # 2. Various static values
@@ -161,7 +162,7 @@ def process_external_url_queue(queue_of_urls, driver=None):
         curr_url = queue_of_urls.dequeue()
         n += 1
         if n % 50 == 0:
-            print('%s pages crawled for %s' % (n, base_url))
+            print('%s: %s pages crawled for %s' % (time.time(), n, base_url))
         # page_tree = parse_page.fetch_page(curr_url)
         page_tree = java_page_scraper.fetch_page(curr_url, driver)
         if page_tree is not None:
