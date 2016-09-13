@@ -5,3 +5,4 @@ __pycache__/
 ghostdriver.log
 *.html
 *.csv
+*.txt

@@ -1,7 +1,6 @@
 from urllib.parse import urlparse
-from base import process_external_url_queue
 import url_queue
-import csv
+import pymysql
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
@@ -55,24 +54,21 @@ def main():
         list_of_firms.append({'firm_name': firm_name,
                               'firm_details': firm_details})
 
-    with open('canada_firm_list.csv', 'w') as csvfile:
-        fieldnames = ['firm_name', 'firm_details']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for firm in list_of_firms:
-            writer.writerow(firm)
+    connection = pymysql.connect(host=HOST,
+                                 password=PASSWORD,
+                                 port=PORT,
+                                 user=USER,
+                                 db=DB)
 
-    # 4. crawl each firm site for emails
-    while len(list_of_external_queues) > 0:
-        active_queue = list_of_external_queues.pop()
-        email_set.update(process_external_url_queue(active_queue, driver))
-
-    with open('canada_email_list.csv', 'w') as csvfile:
-        fieldnames = ['email']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+    sql = 'INSERT INTO emails VALUES (%s)'
+    with connection.cursor() as cursor:
         for email in email_set:
-            writer.writerow(email)
+            try:
+                cursor.execute(sql, email)
+            except Exception as exc:
+                print('Error: %s \nfailed to write %s' % (exc, email))
+
+    connection.commit()
 
 
 def update_external_queue(list_of_queues, set_of_urls, new_url):
