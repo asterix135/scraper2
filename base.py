@@ -163,6 +163,8 @@ def process_external_url_queue(queue_of_urls, driver=None):
         n += 1
         if n % 50 == 0:
             print('%s: %s pages crawled for %s' % (time.time(), n, base_url))
+        if n > 5000:
+            break
         # page_tree = parse_page.fetch_page(curr_url)
         page_tree = java_page_scraper.fetch_page(curr_url, driver)
         if page_tree is not None:
