@@ -61,7 +61,7 @@ def fetch_page(url, driver=None):
         driver = webdriver.PhantomJS()
         fn_driver_created = True
     if url[-3:].lower() == 'pdf':
-        print('skipping pdf: %s' % (url))
+        # print('skipping pdf: %s' % (url))
         return
     try:
         old_page_source = driver.page_source

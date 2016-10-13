@@ -133,7 +133,8 @@ def extract_emails(soup_item):
     :return: set of email addresses as text
     """
     text_block = soup_item.get_text()
-    email_list = re.findall(r'[\w.-]+@[\w-]+\.[\w.-]+', text_block)
+    email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+    email_list = re.findall(email_regex, text_block)
     email_list.extend(parse_page.extract_emails(soup_item))
     return set(email_list)
 
@@ -155,15 +156,17 @@ def process_external_url_queue(queue_of_urls, driver=None):
                                  port=PORT,
                                  user=USER,
                                  db=DB)
-    print('crawling %s' % base_url)
+    print('%s: crawling %s' % (str(time.strftime('%H:%M:%S')), base_url))
     domain_emails = set([])
     n = 0
     while queue_of_urls.queue_len() > 0:
         curr_url = queue_of_urls.dequeue()
         n += 1
         if n % 50 == 0:
-            print('%s: %s pages crawled for %s' % (time.time(), n, base_url))
-        if n > 2500:
+            print('%s: %s pages crawled for %s' % (
+                str(time.strftime('%H:%M:%S')), n, base_url)
+            )
+        if n > 1000:
             break
         # page_tree = parse_page.fetch_page(curr_url)
         page_tree = java_page_scraper.fetch_page(curr_url, driver)
